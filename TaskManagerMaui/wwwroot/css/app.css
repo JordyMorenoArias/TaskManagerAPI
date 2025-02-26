@@ -86,3 +86,37 @@ h1:focus {
         padding-left: env(safe-area-inset-left);
     }
 }
+
+.card-personalized {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 10px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-personalized:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.card-body {
+    flex-grow: 1;
+}
+
+.card-footer {
+    text-align: center;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.swipe-task {
+    transition: transform 0.3s ease-in-out;
+}
+
+.swipe-task.swiped {
+    transform: translateX(100px);
+}
+
