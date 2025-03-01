@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TaskManagerAPI.Data;
-using TaskManagerAPI.Models;
+using TaskManagerAPI.Models.User;
 
 namespace TaskManagerAPI.Repositories
 {
+    /// <summary>
+    /// Repository for user management in the Database.
+    /// </summary>
     public class UserRepository : IUserRepository
     {
         private readonly TaskManagerContext context;

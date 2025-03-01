@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using TaskManagerMaui.Constants;
 
-namespace TaskManagerAPI.Models
+namespace TaskManagerAPI.Models.Task
 {
     public class Task
     {

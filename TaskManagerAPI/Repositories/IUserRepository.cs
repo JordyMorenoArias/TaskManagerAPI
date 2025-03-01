@@ -1,4 +1,4 @@
-﻿using TaskManagerAPI.Models;
+﻿using TaskManagerAPI.Models.User;
 
 namespace TaskManagerAPI.Repositories
 {

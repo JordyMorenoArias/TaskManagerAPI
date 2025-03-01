@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using TaskManagerAPI.Models;
+using TaskManagerAPI.Models.User;
 using TaskManagerAPI.Repositories;
 
 namespace TaskManagerAPI.Services
@@ -9,11 +9,11 @@ namespace TaskManagerAPI.Services
     /// </summary>
     public class UserService : IUserService
     {
-        private readonly IUserRepository userRepository;
+        private readonly IUserRepository _userRepository;
 
         public UserService(IUserRepository userRepository)
         {
-            this.userRepository = userRepository;
+            _userRepository = userRepository;
         }
 
         /// <summary>
@@ -25,7 +25,10 @@ namespace TaskManagerAPI.Services
         /// <exception cref="KeyNotFoundException">Thrown if the email or password is incorrect.</exception>
         public async Task<User?> Validate(string email, string password)
         {
-            var user = await userRepository.GetUserByEmail(email);
+            if(string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                throw new ArgumentNullException("Email and password are required.");
+
+            var user = await _userRepository.GetUserByEmail(email);
             if (user == null)
                 throw new KeyNotFoundException("Invalid email or password.");
 
@@ -41,17 +44,24 @@ namespace TaskManagerAPI.Services
         /// <param name="user">The user object to create.</param>
         /// <returns>The created user if successful; otherwise, null.</returns>
         /// <exception cref="ArgumentException">Thrown if a user with the same email already exists.</exception>
-        public async Task<User?> Create(User user)
+        public async Task<User?> Create(UserCreateDTO userCreateDTO)
         {
-            var existingUser = await userRepository.GetUserByEmail(user.Email);
+            var existingUser = await _userRepository.GetUserByEmail(userCreateDTO.Email);
 
             if (existingUser != null)
                 throw new ArgumentException("User with this email already exists.");
 
-            var passwordHash = new PasswordHasher<User>();
-            user.Password = passwordHash.HashPassword(user, user.Password);
+            var passwordHash = new PasswordHasher<UserCreateDTO>();
+            userCreateDTO.Password = passwordHash.HashPassword(userCreateDTO, userCreateDTO.Password);
 
-            return await userRepository.Create(user);
+            var user = new User
+            {
+                Username = userCreateDTO.Username,
+                Email = userCreateDTO.Email,
+                Password = userCreateDTO.Password,
+            };
+
+            return await _userRepository.Create(user);
         }
 
         /// <summary>
@@ -62,34 +72,51 @@ namespace TaskManagerAPI.Services
         /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
         public async Task<User?> Delete(int userId)
         {
-            var user = await userRepository.GetUserById(userId);
+            var existingUser = await _userRepository.GetUserById(userId);
 
-            if (user == null)
+            if (existingUser == null)
                 throw new KeyNotFoundException("User not found.");
 
-            return await userRepository.Delete(userId);
+            return await _userRepository.Delete(userId);
         }
 
         /// <summary>
         /// Updates an existing user's information.
         /// </summary>
-        /// <param name="user">The updated user object.</param>
+        /// <param name="userUpdateDTO">The updated user object.</param>
         /// <returns>The updated user if found; otherwise, null.</returns>
         /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
-        public async Task<User?> Update(User user)
+        public async Task<User?> Update(UserUpdateDTO userUpdateDTO)
         {
-            var existingUser = await userRepository.GetUserById(user.Id);
+            var existingUser = await _userRepository.GetUserById(userUpdateDTO.Id);
 
             if (existingUser == null)
                 throw new KeyNotFoundException("User not found.");
 
-            if (!string.IsNullOrEmpty(user.Password))
+            if (!string.IsNullOrWhiteSpace(userUpdateDTO.Password))
             {
-                var passwordHash = new PasswordHasher<User>();
-                user.Password = passwordHash.HashPassword(user, user.Password);
+                var passwordHasher = new PasswordHasher<UserUpdateDTO>();
+                existingUser.Password = passwordHasher.HashPassword(userUpdateDTO, userUpdateDTO.Password);
             }
 
-            return await userRepository.Update(user);
+            existingUser.Username = userUpdateDTO.Username ?? existingUser.Username;
+
+            return await _userRepository.Update(existingUser);
+        }
+
+        /// <summary>
+        /// gets a user by their ID.
+        /// </summary>
+        /// <param name="userId">The ID of the user to retrieve.</param>
+        /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
+        public async Task<User?> GetUserById(int userId)
+        {
+            var user = await _userRepository.GetUserById(userId);
+
+            if (user == null)
+                throw new KeyNotFoundException("User not found.");
+
+            return user;
         }
     }
 }
