@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TaskManagerAPI.Models.User;
 
 namespace TaskManagerAPI.Data
 {
@@ -7,7 +8,7 @@ namespace TaskManagerAPI.Data
         public TaskManagerContext(DbContextOptions<TaskManagerContext> options) : base(options)
         {
         }
-        public DbSet<Models.Task> Tasks { get; set; }
-        public DbSet<Models.User> Users { get; set; }
+        public DbSet<Models.Task.Task> Tasks { get; set; }
+        public DbSet<User> Users { get; set; }
     }
 }
