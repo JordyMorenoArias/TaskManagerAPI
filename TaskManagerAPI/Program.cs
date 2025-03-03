@@ -33,7 +33,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     {
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidateLifetime = true,
+        ValidateLifetime = false,
         ValidateIssuerSigningKey = true,
 
         ValidIssuer = builder.Configuration["Jwt:Issuer"],

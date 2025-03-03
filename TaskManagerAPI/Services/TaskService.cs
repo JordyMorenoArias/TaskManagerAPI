@@ -1,4 +1,5 @@
-﻿using TaskManagerAPI.Repositories;
+﻿using TaskManagerAPI.Models.Task;
+using TaskManagerAPI.Repositories;
 
 namespace TaskManagerAPI.Services
 {
@@ -8,12 +9,12 @@ namespace TaskManagerAPI.Services
     public class TaskService : ITaskService
     {
         private readonly ITaskRepository _taskRepository;
-        private readonly IUserRepository _userRepository;
+        private readonly IUserService _userService;
 
-        public TaskService(ITaskRepository taskRepository, IUserRepository userRepository)
+        public TaskService(ITaskRepository taskRepository, IUserService userService)
         {
             _taskRepository = taskRepository;
-            _userRepository = userRepository;
+            _userService = userService;
         }
 
         /// <summary>
@@ -22,12 +23,31 @@ namespace TaskManagerAPI.Services
         /// <param name="task">Task object to create.</param>
         /// <returns>The created task or null if creation failed.</returns>
         /// <exception cref="ArgumentException">Thrown if the task data is invalid.</exception>
-        public async Task<Models.Task.Task?> Create(Models.Task.Task task)
+        public async Task<Models.Task.Task?> Create(TaskCreateDTO taskCreateDTO)
         {
-            if (task == null || string.IsNullOrWhiteSpace(task.Title))
+            if (taskCreateDTO == null)
                 throw new ArgumentException("Invalid task data.");
 
-            return await _taskRepository.Create(task);
+            var existingUser = await _userService.GetUserById(taskCreateDTO.UserId);
+
+            if (existingUser == null)
+                throw new KeyNotFoundException("User not found.");
+
+            var task = new Models.Task.Task
+            {
+                Title = taskCreateDTO.Title,
+                Description = taskCreateDTO.Description,
+                Priority = taskCreateDTO.Priority,
+                DueDate = taskCreateDTO.DueDate,
+                UserId = taskCreateDTO.UserId
+            };
+
+            var taskCreate = await _taskRepository.Create(task);
+
+            if (taskCreate == null)
+                throw new ArgumentException("Task creation failed.");
+
+            return taskCreate;
         }
 
         /// <summary>
@@ -39,7 +59,13 @@ namespace TaskManagerAPI.Services
         /// <exception cref="KeyNotFoundException">Thrown if the task is not found.</exception>
         public async Task<Models.Task.Task?> Delete(int taskId, int userId)
         {
+            var existingUser = await _userService.GetUserById(userId);
+
+            if (existingUser == null)
+                throw new KeyNotFoundException("User not found.");
+
             var task = await _taskRepository.GetTaskById(taskId, userId);
+
             if (task == null)
                 throw new KeyNotFoundException("Task not found.");
 
@@ -53,16 +79,28 @@ namespace TaskManagerAPI.Services
         /// <returns>The updated task or null if update failed.</returns>
         /// <exception cref="ArgumentException">Thrown if the task data is invalid.</exception>
         /// <exception cref="KeyNotFoundException">Thrown if the task is not found.</exception>
-        public async Task<Models.Task.Task?> Update(Models.Task.Task task)
+        public async Task<Models.Task.Task?> Update(TaskUpdateDTO taskUpdateDTO)
         {
-            if (task == null || task.Id <= 0)
+            if (taskUpdateDTO.Id <= 0)
                 throw new ArgumentException("Invalid task data.");
 
-            var existingTask = await _taskRepository.GetTaskById(task.Id, task.UserId);
+            var user = await _userService.GetUserById(taskUpdateDTO.UserId);
+
+            if (user == null)
+                throw new KeyNotFoundException("User not found.");
+
+            var existingTask = await _taskRepository.GetTaskById(taskUpdateDTO.Id, taskUpdateDTO.UserId);
+
             if (existingTask == null)
                 throw new KeyNotFoundException("Task not found.");
 
-            return await _taskRepository.Update(task);
+            existingTask.Title = taskUpdateDTO.Title;
+            existingTask.Description = taskUpdateDTO.Description;
+            existingTask.Priority = taskUpdateDTO.Priority;
+            existingTask.DueDate = taskUpdateDTO.DueDate;
+            existingTask.IsCompleted = taskUpdateDTO.IsCompleted;
+
+            return await _taskRepository.Update(existingTask);
         }
 
         /// <summary>
@@ -73,7 +111,8 @@ namespace TaskManagerAPI.Services
         /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
         public async Task<IEnumerable<Models.Task.Task>> GetAllTasks(int userId)
         {
-            var existingUser = await _userRepository.GetUserById(userId);
+            var existingUser = await _userService.GetUserById(userId);
+
             if (existingUser == null)
                 throw new KeyNotFoundException("User not found.");
 
@@ -90,10 +129,29 @@ namespace TaskManagerAPI.Services
         public async Task<Models.Task.Task> GetTaskById(int taskId, int userId)
         {
             var task = await _taskRepository.GetTaskById(taskId, userId);
+
             if (task == null)
                 throw new KeyNotFoundException("Task not found.");
 
             return task;
+        }
+
+        /// <summary>
+        /// Completeds the specified task identifier.
+        /// </summary>
+        /// <param name="taskId">The task identifier.</param>
+        /// <param name="userId">The user identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="KeyNotFoundException">Task not found.</exception>
+        public async Task<Models.Task.Task?> Completed(int taskId, int userId)
+        {
+            var task = await _taskRepository.GetTaskById(taskId, userId);
+            if (task == null)
+                throw new KeyNotFoundException("Task not found.");
+
+            task.IsCompleted = true; // Only change the status to completed
+
+            return await _taskRepository.Update(task);
         }
     }
 }

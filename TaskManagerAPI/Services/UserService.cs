@@ -118,5 +118,20 @@ namespace TaskManagerAPI.Services
 
             return user;
         }
+
+        /// <summary>
+        /// gets the ID of the authenticated user.
+        /// </summary>
+        /// <param name="httpContext">The current HTTP context.</param>
+        /// <returns>The authenticated user's ID if found; otherwise, null.</returns>
+        public int? GetAuthenticatedUserId(HttpContext httpContext)
+        {
+            var userIdClaim = httpContext.User.FindFirst("Id")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                throw new UnauthorizedAccessException("Invalid token or unauthorized access.");
+
+            return userId;
+        }
     }
 }

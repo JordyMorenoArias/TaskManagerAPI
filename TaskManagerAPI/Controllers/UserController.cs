@@ -66,8 +66,8 @@ namespace TaskManagerAPI.Controllers
                         jwt.Issuer,
                         jwt.Audience,
                         claims,
-                        expires: DateTime.UtcNow.AddHours(5),
                         signingCredentials: signIn
+                        //expires: DateTime.UtcNow.AddHours(5)
                 );
 
                 return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
@@ -113,12 +113,9 @@ namespace TaskManagerAPI.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var userIdClaim = HttpContext.User.FindFirst("Id")?.Value;
+                var userId = _userService.GetAuthenticatedUserId(HttpContext);
 
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-                    return Unauthorized(new { message = "Invalid token or unauthorized access." });
-
-                userUpdateDTO.Id = userId;
+                userUpdateDTO.Id = userId!.Value;
                 var updatedUser = await _userService.Update(userUpdateDTO);
                 return Ok(updatedUser);
             }
@@ -137,13 +134,9 @@ namespace TaskManagerAPI.Controllers
         {
             try
             {
-                var claims = HttpContext.User.Identity as ClaimsIdentity;
-                var userIdClaim = claims?.FindFirst("Id");
+                var userId = _userService.GetAuthenticatedUserId(HttpContext);
 
-                if (userIdClaim == null)
-                    return Unauthorized(new { message = "Unauthorized." });
-
-                await _userService.Delete(int.Parse(userIdClaim.Value));
+                await _userService.Delete(userId!.Value);
                 return Ok();
             }
             catch (Exception ex)
