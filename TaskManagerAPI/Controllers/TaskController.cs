@@ -146,6 +146,64 @@ namespace TaskManagerAPI.Controllers
         }
 
         /// <summary>
+        /// Gets all task by status.
+        /// </summary>
+        /// <param name="status">if set to <c>true</c> [status].</param>
+        /// <returns>List of tasks or an error if not found.</returns>
+        [HttpGet("all/{status}")]
+        public async Task<IActionResult> GetAllTaskByStatus(bool status)
+        {
+            try
+            {
+                var userId = _userService.GetAuthenticatedUserId(HttpContext);
+
+                var result = await _taskService.GetAllTasks(userId!.Value);
+                return Ok(result.Where(t => t.IsCompleted == status));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get a specific task by ID.
+        /// </summary>
+        /// <param name="id">ID of the task to retrieve.</param>
+        /// <returns>The task or an error if not found.</returns>
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetTaskById(int id)
+        {
+            try
+            {
+                var userId = _userService.GetAuthenticatedUserId(HttpContext);
+
+                var result = await _taskService.GetTaskById(id, userId!.Value);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Marks a task as completed.
         /// </summary>
         /// <param name="taskId">ID of the task to mark as completed.</param>

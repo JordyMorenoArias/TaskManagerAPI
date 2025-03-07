@@ -67,8 +67,7 @@ namespace TaskManagerAPI.Controllers
                         jwt.Audience,
                         claims,
                         expires: DateTime.UtcNow.AddDays(1),
-                        signingCredentials: signIn
-                        
+                        signingCredentials: signIn      
                 );
 
                 return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
