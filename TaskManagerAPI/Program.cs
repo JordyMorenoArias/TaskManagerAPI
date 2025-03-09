@@ -5,6 +5,7 @@ using System.Text;
 using TaskManagerAPI.Data;
 using TaskManagerAPI.Repositories;
 using TaskManagerAPI.Services;
+using TaskManagerAPI.Services.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 
@@ -61,7 +64,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<TaskManagerContext>();
-    //context.Database.EnsureCreated();
     context.Database.Migrate(); 
 }
 

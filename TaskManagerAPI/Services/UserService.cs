@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using TaskManagerAPI.Models.User;
 using TaskManagerAPI.Repositories;
+using TaskManagerAPI.Services.Security;
 
 namespace TaskManagerAPI.Services
 {
@@ -10,10 +11,14 @@ namespace TaskManagerAPI.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly ITokenGenerator _tokenGenerator;
+        private readonly IEmailService _emailService;
 
-        public UserService(IUserRepository userRepository)
+        public UserService(IUserRepository userRepository, ITokenGenerator tokenGenerator, IEmailService emailService)
         {
             _userRepository = userRepository;
+            _tokenGenerator = tokenGenerator;
+            _emailService = emailService;
         }
 
         /// <summary>
@@ -54,14 +59,39 @@ namespace TaskManagerAPI.Services
             var passwordHash = new PasswordHasher<UserCreateDTO>();
             userCreateDTO.Password = passwordHash.HashPassword(userCreateDTO, userCreateDTO.Password);
 
+            string token = _tokenGenerator.GenerateToken();
+
             var user = new User
             {
                 Username = userCreateDTO.Username,
                 Email = userCreateDTO.Email,
                 Password = userCreateDTO.Password,
+                EmailVerificationToken = token,
+                IsEmailVerified = false
             };
 
-            return await _userRepository.Create(user);
+            user = await _userRepository.Create(user);
+
+            if (user != null)
+                _emailService.SendVerificationEmail(user.Email, user.EmailVerificationToken);
+
+            return user;
+        }
+
+        /// <summary>
+        /// Verifies the specified token.
+        /// </summary>
+        /// <param name="token">The token.</param>
+        /// <returns></returns>
+        /// <exception cref="System.Collections.Generic.KeyNotFoundException">User not found.</exception>
+        public async Task<User?> Verify(string token)
+        {
+            var user = await _userRepository.Verify(token);
+
+            if (user == null)
+                throw new KeyNotFoundException("User not found.");
+
+            return await _userRepository.Update(user);
         }
 
         /// <summary>

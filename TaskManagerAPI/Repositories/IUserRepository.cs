@@ -9,5 +9,6 @@ namespace TaskManagerAPI.Repositories
         Task<User?> GetUserByEmail(string email);
         Task<User?> GetUserById(int userId);
         Task<User?> Update(User user);
+        Task<User?> Verify(string Token);
     }
 }

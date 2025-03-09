@@ -17,5 +17,8 @@ namespace TaskManagerAPI.Models.User
         [Required(ErrorMessage = "Password is required.")]
         [PasswordPropertyText]
         public string Password { get; set; } = string.Empty;
+        public bool IsEmailVerified { get; set; }
+        [MaxLength(100)]
+        public string EmailVerificationToken { get; set; } = string.Empty;
     }
 }

@@ -179,7 +179,7 @@ namespace TaskManagerAPI.Controllers
         /// </summary>
         /// <param name="id">ID of the task to retrieve.</param>
         /// <returns>The task or an error if not found.</returns>
-        [HttpGet("get/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetTaskById(int id)
         {
             try

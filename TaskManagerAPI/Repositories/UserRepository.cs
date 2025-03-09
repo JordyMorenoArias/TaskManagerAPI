@@ -50,6 +50,24 @@ namespace TaskManagerAPI.Repositories
         }
 
         /// <summary>
+        /// verifies a user's email address.
+        /// </summary>
+        /// <param name="Token">Verification token.</param>
+        /// <returns>The verified user or null if not found.</returns>
+        public async Task<User?> Verify(string Token)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == Token);
+
+            if (user == null)
+                return null;
+
+            user.IsEmailVerified = true;
+            user.EmailVerificationToken = string.Empty;
+            await context.SaveChangesAsync();
+            return user;
+        }
+
+        /// <summary>
         /// Updates an existing user's information.
         /// </summary>
         /// <param name="user">User object with updated information.</param>
