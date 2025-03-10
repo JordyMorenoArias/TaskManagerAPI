@@ -18,26 +18,6 @@ namespace TaskManagerAPI.Repositories
         }
 
         /// <summary>
-        /// Retrieves a user by their ID.
-        /// </summary>
-        /// <param name="userId">User ID.</param>
-        /// <returns>The found user or null if not found.</returns>
-        public async Task<User?> GetUserById(int userId)
-        {
-            return await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        }
-
-        /// <summary>
-        /// Retrieves a user by their email.
-        /// </summary>
-        /// <param name="email">User email.</param>
-        /// <returns>The found user or null if not found.</returns>
-        public async Task<User?> GetUserByEmail(string email)
-        {
-            return await context.Users.FirstOrDefaultAsync(u => u.Email == email);
-        }
-
-        /// <summary>
         /// Creates a new user in the database.
         /// </summary>
         /// <param name="user">User object to create.</param>
@@ -47,24 +27,6 @@ namespace TaskManagerAPI.Repositories
             var result = await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
             return result.Entity;
-        }
-
-        /// <summary>
-        /// verifies a user's email address.
-        /// </summary>
-        /// <param name="Token">Verification token.</param>
-        /// <returns>The verified user or null if not found.</returns>
-        public async Task<User?> Verify(string Token)
-        {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == Token);
-
-            if (user == null)
-                return null;
-
-            user.IsEmailVerified = true;
-            user.EmailVerificationToken = string.Empty;
-            await context.SaveChangesAsync();
-            return user;
         }
 
         /// <summary>
@@ -91,6 +53,44 @@ namespace TaskManagerAPI.Repositories
                 return null;
 
             context.Users.Remove(user);
+            await context.SaveChangesAsync();
+            return user;
+        }
+
+        /// <summary>
+        /// Retrieves a user by their ID.
+        /// </summary>
+        /// <param name="userId">User ID.</param>
+        /// <returns>The found user or null if not found.</returns>
+        public async Task<User?> GetUserById(int userId)
+        {
+            return await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        }
+
+        /// <summary>
+        /// Retrieves a user by their email.
+        /// </summary>
+        /// <param name="email">User email.</param>
+        /// <returns>The found user or null if not found.</returns>
+        public async Task<User?> GetUserByEmail(string email)
+        {
+            return await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        /// <summary>
+        /// verifies a user's email address.
+        /// </summary>
+        /// <param name="Token">Verification token.</param>
+        /// <returns>The verified user or null if not found.</returns>
+        public async Task<User?> Verify(string Token)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == Token);
+
+            if (user == null)
+                return null;
+
+            user.IsEmailVerified = true;
+            user.EmailVerificationToken = string.Empty;
             await context.SaveChangesAsync();
             return user;
         }

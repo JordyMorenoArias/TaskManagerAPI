@@ -43,6 +43,9 @@ namespace TaskManagerAPI.Controllers
         {
             try
             {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
                 var authenticatedUser = await _userService.Validate(userLoginDTO.Email, userLoginDTO.Password);
 
                 if (authenticatedUser == null)
@@ -104,32 +107,6 @@ namespace TaskManagerAPI.Controllers
         }
 
         /// <summary>
-        /// Verifies a user's email address.
-        /// </summary>
-        /// <param name="token">Verification token.</param>
-        /// <returns>Verification confirmation if the operation is successful.</returns>
-        [HttpGet("verify")]
-        public async Task<IActionResult> Verify([FromQuery] string token)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(token))
-                    return BadRequest(new { message = "Token is required." });
-
-                var user = await _userService.Verify(token);
-
-                if (user == null)
-                    return BadRequest(new { message = "Invalid verification token." });
-
-                return Ok("Email verified successfully.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
         /// Updates the data of an authenticated user.
         /// </summary>
         /// <param name="userUpdateDTO">Updated user data.</param>
@@ -167,6 +144,32 @@ namespace TaskManagerAPI.Controllers
 
                 await _userService.Delete(userId!.Value);
                 return Ok("The User was eliminated ");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Verifies a user's email address.
+        /// </summary>
+        /// <param name="token">Verification token.</param>
+        /// <returns>Verification confirmation if the operation is successful.</returns>
+        [HttpGet("verify")]
+        public async Task<IActionResult> Verify([FromQuery] string token)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(token))
+                    return BadRequest(new { message = "Token is required." });
+
+                var user = await _userService.Verify(token);
+
+                if (user == null)
+                    return BadRequest(new { message = "Invalid verification token." });
+
+                return Ok("Email verified successfully.");
             }
             catch (Exception ex)
             {
