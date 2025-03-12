@@ -37,8 +37,5 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     }
-  },
-  "ConnectionStrings": {
-    "DefaultConnection": "server=LAPTOP-989OF5PS\\MSSQLSERVER02;database=TaskManagerMaui;integrated security=true;TrustServerCertificate=True"
   }
 }

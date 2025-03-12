@@ -5,6 +5,7 @@ using System.Text;
 using TaskManagerAPI.Data;
 using TaskManagerAPI.Repositories;
 using TaskManagerAPI.Services;
+using TaskManagerAPI.Services.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 
@@ -33,7 +36,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     {
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidateLifetime = false,
+        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
 
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
@@ -61,8 +64,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<TaskManagerContext>();
-    //context.Database.EnsureCreated();   
-    context.Database.Migrate();
+    context.Database.Migrate(); 
 }
 
 app.Use(async (context, next) =>
@@ -78,6 +80,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

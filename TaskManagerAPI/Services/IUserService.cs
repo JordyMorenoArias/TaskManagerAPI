@@ -10,5 +10,6 @@ namespace TaskManagerAPI.Services
         Task<User?> GetUserById(int userId);
         Task<User?> Update(UserUpdateDTO userUpdateDTO);
         Task<User?> Validate(string email, string password);
+        Task<User?> Verify(string token);
     }
 }

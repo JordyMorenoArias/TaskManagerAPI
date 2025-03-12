@@ -1,5 +1,6 @@
 ﻿using TaskManagerAPI.Models.Task;
 using TaskManagerAPI.Repositories;
+using Task = System.Threading.Tasks.Task;
 
 namespace TaskManagerAPI.Services
 {
@@ -9,12 +10,12 @@ namespace TaskManagerAPI.Services
     public class TaskService : ITaskService
     {
         private readonly ITaskRepository _taskRepository;
-        private readonly IUserService _userService;
+        private readonly IServiceProvider _serviceProvider;
 
-        public TaskService(ITaskRepository taskRepository, IUserService userService)
+        public TaskService(ITaskRepository taskRepository, IServiceProvider serviceProvider)
         {
             _taskRepository = taskRepository;
-            _userService = userService;
+            _serviceProvider = serviceProvider;
         }
 
         /// <summary>
@@ -28,7 +29,8 @@ namespace TaskManagerAPI.Services
             if (taskCreateDTO == null)
                 throw new ArgumentException("Invalid task data.");
 
-            var existingUser = await _userService.GetUserById(taskCreateDTO.UserId);
+            var userService = _serviceProvider.GetRequiredService<IUserService>();
+            var existingUser = await userService.GetUserById(taskCreateDTO.UserId);
 
             if (existingUser == null)
                 throw new KeyNotFoundException("User not found.");
@@ -51,28 +53,6 @@ namespace TaskManagerAPI.Services
         }
 
         /// <summary>
-        /// Deletes a specific task.
-        /// </summary>
-        /// <param name="taskId">ID of the task to delete.</param>
-        /// <param name="userId">ID of the task owner.</param>
-        /// <returns>The deleted task or null if deletion failed.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown if the task is not found.</exception>
-        public async Task<Models.Task.Task?> Delete(int taskId, int userId)
-        {
-            var existingUser = await _userService.GetUserById(userId);
-
-            if (existingUser == null)
-                throw new KeyNotFoundException("User not found.");
-
-            var task = await _taskRepository.GetTaskById(taskId, userId);
-
-            if (task == null)
-                throw new KeyNotFoundException("Task not found.");
-
-            return await _taskRepository.Delete(taskId, userId);
-        }
-
-        /// <summary>
         /// Updates an existing task.
         /// </summary>
         /// <param name="task">Task object with updated data.</param>
@@ -84,9 +64,10 @@ namespace TaskManagerAPI.Services
             if (taskUpdateDTO.Id <= 0)
                 throw new ArgumentException("Invalid task data.");
 
-            var user = await _userService.GetUserById(taskUpdateDTO.UserId);
+            var userService = _serviceProvider.GetRequiredService<IUserService>();
+            var existingUser = await userService.GetUserById(taskUpdateDTO.UserId);
 
-            if (user == null)
+            if (existingUser == null)
                 throw new KeyNotFoundException("User not found.");
 
             var existingTask = await _taskRepository.GetTaskById(taskUpdateDTO.Id, taskUpdateDTO.UserId);
@@ -104,19 +85,35 @@ namespace TaskManagerAPI.Services
         }
 
         /// <summary>
-        /// Retrieves all tasks for a user.
+        /// Deletes a specific task.
         /// </summary>
-        /// <param name="userId">User ID.</param>
-        /// <returns>A list of tasks for the user.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
-        public async Task<IEnumerable<Models.Task.Task>> GetAllTasks(int userId)
+        /// <param name="taskId">ID of the task to delete.</param>
+        /// <param name="userId">ID of the task owner.</param>
+        /// <returns>The deleted task or null if deletion failed.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if the task is not found.</exception>
+        public async Task<Models.Task.Task?> Delete(int taskId, int userId)
         {
-            var existingUser = await _userService.GetUserById(userId);
+            var userService = _serviceProvider.GetRequiredService<IUserService>();
+            var existingUser = await userService.GetUserById(userId);
 
             if (existingUser == null)
                 throw new KeyNotFoundException("User not found.");
 
-            return await _taskRepository.GetAllTasks(userId);
+            var task = await _taskRepository.GetTaskById(taskId, userId);
+
+            if (task == null)
+                throw new KeyNotFoundException("Task not found.");
+
+            return await _taskRepository.Delete(taskId, userId);
+        }
+
+        /// <summary>
+        /// Deletes all tasks by user identifier.
+        /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        public async Task DeleteAllTasksByUserId(int userId)
+        {
+            await _taskRepository.DeleteAllTasksByUserId(userId);
         }
 
         /// <summary>
@@ -134,6 +131,39 @@ namespace TaskManagerAPI.Services
                 throw new KeyNotFoundException("Task not found.");
 
             return task;
+        }
+
+        /// <summary>
+        /// Retrieves all tasks for a user.
+        /// </summary>
+        /// <param name="userId">User ID.</param>
+        /// <returns>A list of tasks for the user.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
+        public async Task<IEnumerable<Models.Task.Task>> GetAllTasks(int userId)
+        {
+            var userService = _serviceProvider.GetRequiredService<IUserService>();
+            var existingUser = await userService.GetUserById(userId);
+
+            if (existingUser == null)
+                throw new KeyNotFoundException("User not found.");
+
+            return await _taskRepository.GetAllTasks(userId);
+        }
+
+        /// <summary>
+        /// retrieves all tasks by status.
+        /// <param name="userId">User ID.</param>
+        /// <returns>A list of tasks for the user.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
+        public async Task<IEnumerable<Models.Task.Task>> GetAllTasksByStatus(int userId, bool isCompleted)
+        {
+            var userService = _serviceProvider.GetRequiredService<IUserService>();
+            var existingUser = await userService.GetUserById(userId);
+
+            if (existingUser == null)
+                throw new KeyNotFoundException("User not found.");
+
+            return await _taskRepository.GetAllTasksByStatus(userId, isCompleted);
         }
 
         /// <summary>

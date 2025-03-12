@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using TaskManagerAPI.Models.User;
 using TaskManagerAPI.Repositories;
+using TaskManagerAPI.Services.Security;
 
 namespace TaskManagerAPI.Services
 {
@@ -10,10 +11,16 @@ namespace TaskManagerAPI.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly ITokenGenerator _tokenGenerator;
+        private readonly IEmailService _emailService;
+        private readonly IServiceProvider _serviceProvider;
 
-        public UserService(IUserRepository userRepository)
+        public UserService(IUserRepository userRepository, ITokenGenerator tokenGenerator, IEmailService emailService, IServiceProvider serviceProvider)
         {
             _userRepository = userRepository;
+            _tokenGenerator = tokenGenerator;
+            _emailService = emailService;
+            _serviceProvider = serviceProvider;
         }
 
         /// <summary>
@@ -54,30 +61,23 @@ namespace TaskManagerAPI.Services
             var passwordHash = new PasswordHasher<UserCreateDTO>();
             userCreateDTO.Password = passwordHash.HashPassword(userCreateDTO, userCreateDTO.Password);
 
+            string token = _tokenGenerator.GenerateToken();
+
             var user = new User
             {
                 Username = userCreateDTO.Username,
                 Email = userCreateDTO.Email,
                 Password = userCreateDTO.Password,
+                EmailVerificationToken = token,
+                IsEmailVerified = false
             };
 
-            return await _userRepository.Create(user);
-        }
+            user = await _userRepository.Create(user);
 
-        /// <summary>
-        /// Deletes a user by their ID.
-        /// </summary>
-        /// <param name="userId">The ID of the user to delete.</param>
-        /// <returns>The deleted user if found; otherwise, null.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
-        public async Task<User?> Delete(int userId)
-        {
-            var existingUser = await _userRepository.GetUserById(userId);
+            if (user != null)
+                _emailService.SendVerificationEmail(user.Email, user.EmailVerificationToken);
 
-            if (existingUser == null)
-                throw new KeyNotFoundException("User not found.");
-
-            return await _userRepository.Delete(userId);
+            return user;
         }
 
         /// <summary>
@@ -105,6 +105,25 @@ namespace TaskManagerAPI.Services
         }
 
         /// <summary>
+        /// Deletes a user by their ID.
+        /// </summary>
+        /// <param name="userId">The ID of the user to delete.</param>
+        /// <returns>The deleted user if found; otherwise, null.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
+        public async Task<User?> Delete(int userId)
+        {
+            var existingUser = await _userRepository.GetUserById(userId);
+
+            if (existingUser == null)
+                throw new KeyNotFoundException("User not found.");
+
+            var taskService = _serviceProvider.GetRequiredService<ITaskService>();
+            await taskService.DeleteAllTasksByUserId(userId);
+
+            return await _userRepository.Delete(userId);
+        }
+
+        /// <summary>
         /// gets a user by their ID.
         /// </summary>
         /// <param name="userId">The ID of the user to retrieve.</param>
@@ -117,6 +136,22 @@ namespace TaskManagerAPI.Services
                 throw new KeyNotFoundException("User not found.");
 
             return user;
+        }
+
+        /// <summary>
+        /// Verifies the specified token.
+        /// </summary>
+        /// <param name="token">The token.</param>
+        /// <returns></returns>
+        /// <exception cref="System.Collections.Generic.KeyNotFoundException">User not found.</exception>
+        public async Task<User?> Verify(string token)
+        {
+            var user = await _userRepository.Verify(token);
+
+            if (user == null)
+                throw new KeyNotFoundException("User not found.");
+
+            return await _userRepository.Update(user);
         }
 
         /// <summary>
