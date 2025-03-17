@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Net.Security;
+﻿using Azure;
+using Microsoft.AspNetCore.Mvc;
 using TaskManagerAPI.Models.Task;
 using TaskManagerAPI.Services;
+using Microsoft.Net.Http.Headers;
+
 
 namespace TaskManagerAPI.Controllers
 {
@@ -12,11 +13,13 @@ namespace TaskManagerAPI.Controllers
     {
         private readonly ITaskService _taskService;
         private readonly IUserService _userService;
+        private readonly IETagHelper _eTagHelper;
 
-        public TaskController(ITaskService taskService, IUserService userService)
+        public TaskController(ITaskService taskService, IUserService userService, IETagHelper eTagHelper)
         {
             _taskService = taskService;
             _userService = userService;
+            _eTagHelper = eTagHelper;
         }
 
         /// <summary>
@@ -130,6 +133,15 @@ namespace TaskManagerAPI.Controllers
 
                 var result = await _taskService.GetTaskById(id, userId!.Value);
 
+                var etag = _eTagHelper.GenerateETag(result);
+
+                if (Request.Headers.IfNoneMatch.Contains(etag))
+                {
+                    return StatusCode(304);
+                }
+
+                Response.Headers.ETag = etag;
+
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -159,6 +171,14 @@ namespace TaskManagerAPI.Controllers
 
                 var result = await _taskService.GetAllTasks(userId!.Value);
 
+                var etag = _eTagHelper.GenerateETag(result);
+
+                if (Request.Headers.IfNoneMatch.Contains(etag))
+                {
+                    return StatusCode(304);
+                }
+
+                Response.Headers.ETag = etag;
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -188,6 +208,15 @@ namespace TaskManagerAPI.Controllers
                 var userId = _userService.GetAuthenticatedUserId(HttpContext);
 
                 var result = await _taskService.GetAllTasksByStatus(userId!.Value, status);
+
+                var etag = _eTagHelper.GenerateETag(result);
+
+                if (Request.Headers.IfNoneMatch.Contains(etag))
+                {
+                    return StatusCode(304);
+                }
+
+                Response.Headers.ETag = etag;
 
                 return Ok(result);
             }

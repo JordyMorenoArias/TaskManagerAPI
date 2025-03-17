@@ -21,7 +21,10 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+
 builder.Services.AddTransient<ITokenGenerator, TokenGenerator>();
+builder.Services.AddTransient<IETagHelper, ETagHelper>();
+
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
