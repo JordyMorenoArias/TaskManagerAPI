@@ -141,7 +141,6 @@ namespace TaskManagerAPI.Controllers
                 }
 
                 Response.Headers.ETag = etag;
-
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -217,7 +216,6 @@ namespace TaskManagerAPI.Controllers
                 }
 
                 Response.Headers.ETag = etag;
-
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
